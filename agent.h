@@ -121,6 +121,13 @@ public:
 		:random_player(args)
 	{
 		sim_counts = 100;
+		if(args.find("simulation=") != std::string::npos)
+		{
+			std::string sims = args.substr(args.find("simulation=") + 11);
+			sims = sims.substr(0,sims.find(" "));
+			//std::cout<< "simulation=" << sims << std::endl;
+			sim_counts = std::stoi(sims);
+		}
 	}
 	virtual action take_action(const board& state) {
 		return Simulation(state);
