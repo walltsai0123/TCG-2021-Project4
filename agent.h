@@ -133,10 +133,15 @@ public:
 		}
 	}
 	virtual action take_action(const board& state) {
-		
 		return Simulation(state);
 	}
 private:
+	void deleteSearchTree(Node *root){
+		for(Node *child : root->child){
+			deleteSearchTree(child);
+		}
+		delete root;
+	}
 	Node *selection(Node *root){
 		if(root->child.empty())	//leaf
 			return root;
@@ -197,6 +202,8 @@ private:
 				break;
 			MYTURN = !MYTURN;
 		}
+		delete myself;
+		delete opponent;
 		return !MYTURN;
 	}
 	void backPropagation(Node *current, int win){
@@ -212,8 +219,10 @@ private:
 		root->b = state;
 		root->who = (this->who == board::black) ? board::white : board::black;
 		expansion(root);
-		if(root->child.empty())
+		if(root->child.empty()){
+			delete root;
 			return action();
+		}
 		for(int i = sim_counts; i > 0; ++i){
 			Node *current = selection(root);
 			if(current->visit > 0){
@@ -226,9 +235,6 @@ private:
 			cur_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 			
 			if(cur_time - start_time >= time_limit){
-				//std::cout << "start time: " << start_time << std::endl;
-				//std::cout << "current time: " << cur_time << std::endl;
-				//std::cout << i - sim_counts << std::endl;
 				break;
 			}
 		}
@@ -241,9 +247,8 @@ private:
 				bestWinRate = winRate;
 				bestmove = child->move;
 			}
-			//std::cout<< child->win << " " <<  child->visit << std::endl;
 		}
-		//std::cout << root->visit << std::endl;
+		deleteSearchTree(root);
 		return bestmove;
 	}
 	//variables
