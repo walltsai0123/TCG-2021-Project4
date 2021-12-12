@@ -111,6 +111,7 @@ class MCTS_player: public random_player{
 		int visit;
 		int win;
 		board b;
+		board::piece_type who;
 		action::place move;
 		struct Node *parent;
 		std::vector<struct Node*> child;
@@ -145,28 +146,34 @@ private:
 		return selection(bestNode);
 	}
 	void expansion(Node *node){
-		std::shuffle(space.begin(), space.end(), engine);
-		for (const action::place& move : space) {
+		board::piece_type child_type = (node->who == board::black) ? board::white : board::black;
+		std::vector<action::place> child_space(board::size_x * board::size_y);
+		for (size_t i = 0; i < child_space.size(); i++)
+			child_space[i] = action::place(i, child_type);
+
+		std::shuffle(child_space.begin(), child_space.end(), engine);
+		for (const action::place& move : child_space) {
 			board after = node->b;
 			if (move.apply(after) == board::legal){
 				Node *newchild = new Node();
 				newchild->parent = node;
 				newchild->move = move;
 				newchild->b = after;
+				newchild->who = child_type;
 				node->child.push_back(newchild);
 			}
 		}
 	}
 	bool oneSim(Node *node){
-		random_player *opponent,*myself;
+		random_player *myself = new random_player("name=white  role=white");
+		random_player *opponent = new random_player("name=black  role=black");
 		if(this->who == board::black){
-			myself = new random_player("name=black  role=black");
-			opponent = new random_player("name=white  role=white");
-		}else if(this->who == board::white){
-			myself = new random_player("name=white  role=white");
-			opponent = new random_player("name=black  role=black");
+			random_player *temp;
+			temp = myself;
+			myself = opponent;
+			opponent = temp;
 		}
-		bool MYTURN = false;
+		bool MYTURN = (node->who == this->who) ? false : true;
 		board state = node->b;
 		while(true){
 			action move;
@@ -191,21 +198,19 @@ private:
 	action Simulation(const board& state){
 		Node *root = new Node();
 		root->b = state;
+		root->who = (this->who == board::black) ? board::white : board::black;
 		expansion(root);
 		if(root->child.empty())
 			return action();
 		for(int i = sim_counts; i > 0; --i){
 			Node *current = selection(root);
-			//std::cout<< current->move.position() << std::endl;
-			//std::cout<< current->visit << std::endl;
-			/* if(current->visit > 0){
+			if(current->visit > 0){
 				expansion(current);
-				std::cout<< current->child.size() << std::endl;
-				current = current->child[0];
-			} */
+				if(!current->child.empty())
+					current = current->child[0];
+			}
 			int win = oneSim(current) ? 1 : 0;
 			backPropagation(current, win);
-			//std::cout<< root->win << "/" << root->visit << std::endl;
 		}
 		float bestWinRate = (float)root->child[0]->win / root->child[0]->visit;
 		action::place bestmove = root->child[0]->move;
