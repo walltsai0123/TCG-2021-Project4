@@ -17,6 +17,8 @@
 #include "board.h"
 #include "action.h"
 #include <fstream>
+#include <chrono>
+#include <ctime>
 
 class agent {
 public:
@@ -121,6 +123,7 @@ public:
 		:random_player(args)
 	{
 		sim_counts = 100;
+		time_limit = 1000;
 		if(args.find("simulation=") != std::string::npos)
 		{
 			std::string sims = args.substr(args.find("simulation=") + 11);
@@ -130,6 +133,7 @@ public:
 		}
 	}
 	virtual action take_action(const board& state) {
+		
 		return Simulation(state);
 	}
 private:
@@ -203,13 +207,14 @@ private:
 		backPropagation(current->parent, win);
 	}
 	action Simulation(const board& state){
+		start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 		Node *root = new Node();
 		root->b = state;
 		root->who = (this->who == board::black) ? board::white : board::black;
 		expansion(root);
 		if(root->child.empty())
 			return action();
-		for(int i = sim_counts; i > 0; --i){
+		for(int i = sim_counts; i > 0; ++i){
 			Node *current = selection(root);
 			if(current->visit > 0){
 				expansion(current);
@@ -218,6 +223,14 @@ private:
 			}
 			int win = oneSim(current) ? 1 : 0;
 			backPropagation(current, win);
+			cur_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+			
+			if(cur_time - start_time >= time_limit){
+				//std::cout << "start time: " << start_time << std::endl;
+				//std::cout << "current time: " << cur_time << std::endl;
+				//std::cout << i - sim_counts << std::endl;
+				break;
+			}
 		}
 		float bestWinRate = (float)root->child[0]->win / root->child[0]->visit;
 		action::place bestmove = root->child[0]->move;
@@ -237,6 +250,7 @@ private:
 	//std::vector<action::place> space;
 	//board::piece_type who;
 	int sim_counts;
+	time_t time_limit,start_time,cur_time;
 };
 class player: public random_player{
 public:
