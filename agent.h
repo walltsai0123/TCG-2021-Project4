@@ -151,8 +151,10 @@ private:
 			if(current->visit == 0)
 				return current;
 			else{
-				float value = (float)current->win / current->visit
-					+ sqrt(2 * log(root->visit) / current->visit);
+				float c = 0.1;
+				float winRate = (float)current->win / current->visit;
+				float value = winRate - pow(winRate,2)
+					+ c * sqrt(2 * log(root->visit) / current->visit);
 				if(value > bestValue){
 					bestNode = current;
 					bestValue = value;
