@@ -269,7 +269,7 @@ public:
 			std::string search = args.substr(args.find("search=") + 7);
 			search = search.substr(0,search.find(" "));
 			//std::cout<< "search=" << search << std::endl;
-			if(search == "MCTS"){
+			if(search == "MCTS" || search == "mcts"){
 				myAgent = new MCTS_player(args);
 			}
 		}
